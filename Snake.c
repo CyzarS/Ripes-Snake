@@ -8,7 +8,7 @@
 #define WALL_COLOR 0xFFFF00
 #define BODY_COLOR 0xFF0000
 #define FOOD_COLOR 0x00FF00
-#define LED_MATRIX_0_BASE ((volatile unsigned int *)0xf0000014)
+#define LED_MATRIX_0_BASE ((volatile unsigned int *)0xf0000000)
 
 volatile unsigned int *head = LED_MATRIX_0_BASE;
 volatile unsigned int *matrix_cleaner = LED_MATRIX_0_BASE;
@@ -187,5 +187,49 @@ void disableLEDs() {
     *led4 = 0x000000;
 }
 
-// Te toca chambear con lo de la manzana hermanito, te dejo la función random y setSeed para que las uses como quieras C:. Btw, defini algunas variables para 
-// guiarte con el tema de la manzana, pero no las he usado. Te dejo la función random y setSeed para que las uses como quieras C:. También como el color de la manzana. Ahí si quieres cambiale.
+int random() {
+    unsigned int head_position = (unsigned int)head;
+    random_seed = random_seed * 435324123 + head_position;
+    return (unsigned int)(random_seed / 65536) % 32768;
+}
+
+void setSeed(unsigned int root) {
+    random_seed = root;
+}
+
+void spawnFood() {
+    setSeed(random_seed);
+
+    int num_positions_x = (LED_MATRIX_0_WIDTH - 4) / 2;
+    int num_positions_y = (LED_MATRIX_0_HEIGHT - 4) / 2;
+
+    int coord_x = 0;
+    int coord_y = 0;
+
+    int apple;
+    int apple_pos[4];
+
+    do {
+        coord_x = (random() % num_positions_x) * 2 + 2 - 1;
+        coord_y = (random() % num_positions_y) * 2 + 2 - 1;
+
+        apple = coord_y * LED_MATRIX_0_WIDTH + coord_x;
+
+        apple_pos[0] = apple;
+        apple_pos[1] = apple + 1;
+        apple_pos[2] = apple + LED_MATRIX_0_WIDTH;
+        apple_pos[3] = apple + LED_MATRIX_0_WIDTH + 1;
+
+    } while (LED_MATRIX_0_BASE[apple_pos[0]] != 0x000000 ||
+             LED_MATRIX_0_BASE[apple_pos[1]] != 0x000000 ||
+             LED_MATRIX_0_BASE[apple_pos[2]] != 0x000000 ||
+             LED_MATRIX_0_BASE[apple_pos[3]] != 0x000000);
+
+    LED_MATRIX_0_BASE[apple_pos[0]] = FOOD_COLOR;
+    LED_MATRIX_0_BASE[apple_pos[1]] = FOOD_COLOR;
+    LED_MATRIX_0_BASE[apple_pos[2]] = FOOD_COLOR;
+    LED_MATRIX_0_BASE[apple_pos[3]] = FOOD_COLOR;
+
+    random_seed++;
+    food_count++;
+}
